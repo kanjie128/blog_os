@@ -1,3 +1,4 @@
+//! use vga device to print messages in screen
 use core::fmt;
 use core::fmt::Write;
 use lazy_static::lazy_static;
@@ -120,6 +121,7 @@ macro_rules! print {
     ($($arg:tt)*) => ($crate::vga_buffer::_print(format_args!($($arg)*)));
 }
 
+// macro_export export macro to the root of the crate, so no need reexport them
 #[macro_export]
 macro_rules! println {
     () => ($crate::print!("\n"));
@@ -138,4 +140,26 @@ lazy_static! {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     WRITER.lock().write_fmt(args).unwrap();
+}
+
+#[test_case]
+fn test_println_simple() {
+    println!("test_println_simple output");
+}
+
+#[test_case]
+fn test_println_many() {
+    for _ in 0..200 {
+        println!("test_println_simple output");
+    }
+}
+
+#[test_case]
+fn test_println_output() {
+    let s = "Some test string that fits on a single line";
+    println!("{}", s);
+    s.chars().enumerate().for_each(|(i, c)| {
+        let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
+        assert_eq!(char::from(screen_char.ascii_character), c);
+    });
 }
